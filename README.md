@@ -29,6 +29,20 @@ The pipeline follows a layered architecture:
 
 **Public Dataset → RAW → STAGE → ANALYTICS → Analytical View → Tableau**
 
+```mermaid
+flowchart TD
+    A["NYC Yellow Taxi Trips 2022<br/>BigQuery Public Dataset"] --> B["RAW<br/>raw_taxi_trips"]
+    B --> C["STAGE<br/>Stage_taxi_trips"]
+    C --> D["ANALYTICS<br/>analytics_taxi_daily"]
+    D --> E["VIEW<br/>vw_taxi_dashboard"]
+    E --> F["Tableau Dashboard<br/>Published static extract"]
+    G["Scheduled SQL<br/>09:00 UTC"] -.-> B
+    H["Scheduled SQL<br/>09:10 UTC"] -.-> C
+    I["Scheduled SQL<br/>09:20 UTC"] -.-> D
+```
+
+
+
 ### 1. RAW Layer
 
 Ingests source records into BigQuery while preserving the original trip-level structure for downstream processing.
