@@ -1,15 +1,12 @@
--- NYC Taxi Analytics | 02 - RAW to STAGE transformation
--- Original SQL recovered from the scheduled query "Taxi - Raw to Staging".
--- Source: learning-bigquery-509717.sales.raw_taxi_trips
--- Target: learning-bigquery-509717.sales.Stage_taxi_test
---
--- NOTE: This scheduled query targets Stage_taxi_test, not Stage_taxi_trips.
--- The processing date is hard-coded to 2022-07-01 in the original query.
--- Only passenger_count uses null-safe equality in the MERGE condition.
--- Quality statuses here cover negative distance and non-positive fare;
--- they do not include additional datetime or revenue checks.
+-- Scheduled-query version configured October 2026.
+-- @run_time maps the scheduled execution date to a historical date starting
+-- at 2022-07-01 on 2026-10-09 (America/Sao_Paulo), capped at 2022-12-31.
+-- Execute as a BigQuery Scheduled Query; manual runs require @run_time.
+-- This calendar-based mapping does not automatically retry missed dates.
+-- Ten-minute scheduling gaps do not guarantee upstream completion.
+-- Tableau Public uses a static extract, not an automatically refreshed live view.
 
-MERGE `learning-bigquery-509717.sales.Stage_taxi_test` AS target
+MERGE `learning-bigquery-509717.sales.Stage_taxi_trips` AS target
 USING (
   SELECT
     *,
@@ -21,7 +18,22 @@ USING (
       ELSE 'VALID'
     END AS data_quality_status
   FROM `learning-bigquery-509717.sales.raw_taxi_trips`
-  WHERE DATE(pickup_datetime) = '2022-07-01'
+  WHERE DATE(pickup_datetime) = DATE_ADD(
+    DATE '2022-07-01',
+    INTERVAL DATE_DIFF(
+      DATE(@run_time, 'America/Sao_Paulo'),
+      DATE '2026-10-09',
+      DAY
+    ) DAY
+  )
+    AND DATE_ADD(
+    DATE '2022-07-01',
+    INTERVAL DATE_DIFF(
+      DATE(@run_time, 'America/Sao_Paulo'),
+      DATE '2026-10-09',
+      DAY
+    ) DAY
+  ) BETWEEN DATE '2022-07-01' AND DATE '2022-12-31'
   QUALIFY ROW_NUMBER() OVER (
     PARTITION BY
       pickup_datetime,
