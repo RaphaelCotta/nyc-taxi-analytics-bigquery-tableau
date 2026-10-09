@@ -1,14 +1,10 @@
--- NYC Taxi Analytics | 01 - RAW ingestion
--- Source: BigQuery public NYC Yellow Taxi Trips 2022 dataset
--- Target: learning-bigquery-509717.sales.raw_taxi_trips
---
--- This is the original lab query. The date is intentionally hard-coded
--- to 2022-07-01; change it or parameterize it for another processing date.
--- The MERGE inserts only unmatched rows. It does not update existing rows.
--- ROW_NUMBER removes duplicate rows within the selected source batch.
--- Note: only passenger_count uses null-safe matching in the ON clause;
--- other nullable key fields may require IS NOT DISTINCT FROM for robust
--- idempotency across all possible source values.
+-- Scheduled-query version configured October 2026.
+-- @run_time maps the scheduled execution date to a historical date starting
+-- at 2022-07-01 on 2026-10-09 (America/Sao_Paulo), capped at 2022-12-31.
+-- Execute as a BigQuery Scheduled Query; manual runs require @run_time.
+-- This calendar-based mapping does not automatically retry missed dates.
+-- Ten-minute scheduling gaps do not guarantee upstream completion.
+-- Tableau Public uses a static extract, not an automatically refreshed live view.
 
 MERGE `learning-bigquery-509717.sales.raw_taxi_trips` AS target
 USING (
@@ -17,8 +13,22 @@ USING (
     CURRENT_TIMESTAMP() AS loaded_at
   FROM
     `bigquery-public-data.new_york_taxi_trips.tlc_yellow_trips_2022`
-  WHERE
-    DATE(pickup_datetime) = '2022-07-01'
+  WHERE DATE(pickup_datetime) = DATE_ADD(
+    DATE '2022-07-01',
+    INTERVAL DATE_DIFF(
+      DATE(@run_time, 'America/Sao_Paulo'),
+      DATE '2026-10-09',
+      DAY
+    ) DAY
+  )
+    AND DATE_ADD(
+    DATE '2022-07-01',
+    INTERVAL DATE_DIFF(
+      DATE(@run_time, 'America/Sao_Paulo'),
+      DATE '2026-10-09',
+      DAY
+    ) DAY
+  ) BETWEEN DATE '2022-07-01' AND DATE '2022-12-31'
   QUALIFY ROW_NUMBER() OVER (
     PARTITION BY
       pickup_datetime,
