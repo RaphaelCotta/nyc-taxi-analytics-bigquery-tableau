@@ -1,20 +1,10 @@
--- NYC Taxi Analytics | 03 - STAGE to ANALYTICS incremental MERGE
--- Updated to match the current analytics_taxi_daily schema.
--- Tested manually for 2022-07-01; the BigQuery MERGE completed successfully.
--- The scheduled query "Taxi - Staging to Analytics" was updated in BigQuery.
---
--- Source: learning-bigquery-509717.sales.Stage_taxi_trips
--- Target: learning-bigquery-509717.sales.analytics_taxi_daily
--- Grain: pickup_date + payment_type
---
--- NOTE: The date is intentionally fixed to 2022-07-01 for this lab.
--- A daily schedule with this fixed filter reprocesses the same date,
--- not the current day. Parameterize the date before claiming a
--- rolling daily incremental pipeline.
--- NOTE: The RAW -> STAGE scheduled query previously supplied writes
--- to Stage_taxi_test, not Stage_taxi_trips. Reconcile this mismatch.
--- NOTE: Nonnegative trip duration and tip are the assumed validity
--- rules in this corrected query; confirm against business requirements.
+-- Scheduled-query version configured October 2026.
+-- @run_time maps the scheduled execution date to a historical date starting
+-- at 2022-07-01 on 2026-10-09 (America/Sao_Paulo), capped at 2022-12-31.
+-- Execute as a BigQuery Scheduled Query; manual runs require @run_time.
+-- This calendar-based mapping does not automatically retry missed dates.
+-- Ten-minute scheduling gaps do not guarantee upstream completion.
+-- Tableau Public uses a static extract, not an automatically refreshed live view.
 
 MERGE `learning-bigquery-509717.sales.analytics_taxi_daily` AS target
 USING (
@@ -37,7 +27,22 @@ USING (
     SUM(CASE WHEN tip_amount >= 0 THEN tip_amount END) AS total_tip,
     COUNTIF(tip_amount >= 0) AS qtd_valid_tips
   FROM `learning-bigquery-509717.sales.Stage_taxi_trips`
-  WHERE pickup_date = '2022-07-01'
+  WHERE pickup_date = DATE_ADD(
+    DATE '2022-07-01',
+    INTERVAL DATE_DIFF(
+      DATE(@run_time, 'America/Sao_Paulo'),
+      DATE '2026-10-09',
+      DAY
+    ) DAY
+  )
+    AND DATE_ADD(
+    DATE '2022-07-01',
+    INTERVAL DATE_DIFF(
+      DATE(@run_time, 'America/Sao_Paulo'),
+      DATE '2026-10-09',
+      DAY
+    ) DAY
+  ) BETWEEN DATE '2022-07-01' AND DATE '2022-12-31'
   GROUP BY pickup_date, payment_type
 ) AS source
 ON target.pickup_date = source.pickup_date
