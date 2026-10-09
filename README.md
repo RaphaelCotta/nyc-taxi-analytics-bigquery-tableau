@@ -88,9 +88,32 @@ The dashboard uses a Tableau extract for public distribution. The published extr
 - Reusable analytical view
 - Interactive Tableau dashboard published online
 
-## Repository Documentation
+## SQL Implementation
 
-The repository will include the SQL scripts, architecture diagram, data quality rules, and dashboard preview to explain the implementation and key technical decisions.
+| Script | Purpose |
+|---|---|
+| [01 — RAW ingestion](sql/01_raw_ingestion.sql) | Load and deduplicate source trips with MERGE |
+| [02 — STAGE transformation](sql/02_stage_transformation.sql) | Transform, validate and deduplicate trips |
+| [03 — ANALYTICS incremental MERGE](sql/03_incremental_merge.sql) | Aggregate trip counts, revenue and weighted-average inputs |
+| [04 — Tableau analytical view](sql/04_analytics_view.sql) | Expose the analytics table to the dashboard |
+
+### Historical incremental schedule
+
+The scheduled pipeline maps each execution date to one historical date: October 9, 2026 corresponds to July 1, 2022. It advances one historical day per daily execution and restricts processing to July 1–December 31, 2022.
+
+| Scheduled query | Time (UTC) |
+|---|---|
+| BASE-RAW | 09:00 |
+| Taxi - Raw to Staging | 09:10 |
+| Taxi - Staging to Analytics | 09:20 |
+
+**Validation:** A manual reconciliation for July 1, 2022 returned matching trip counts across RAW, STAGE, and ANALYTICS. The updated three-step scheduled workflow still requires confirmation from a subsequent automatic run.
+
+**Operational limitations:** Calendar-based processing does not automatically catch up missed execution dates. Fixed scheduling gaps do not guarantee dependency completion. The published Tableau Public dashboard uses a static extract and does not automatically refresh when BigQuery changes.
+
+## Data Quality Documentation
+
+See [Data quality rules](docs/data_quality_rules.md).
 
 ## Data Source
 
