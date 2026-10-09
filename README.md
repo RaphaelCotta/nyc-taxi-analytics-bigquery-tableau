@@ -4,6 +4,8 @@
 
 [**Explore the Interactive Tableau Dashboard**](https://public.tableau.com/app/profile/raphael.queiroz.cotta/viz/NYC_Taxi_Analytics_17914847769430/Dash)
 
+![NYC Taxi Analytics dashboard — January to November 2022](Dashboard.png)
+
 ## Project Overview
 
 This project demonstrates an end-to-end analytics workflow using New York City taxi trip data. It covers data ingestion, transformation, quality validation, incremental processing, analytical modeling, and interactive business intelligence.
